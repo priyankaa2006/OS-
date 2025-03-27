@@ -39,3 +39,8 @@ int main() {
     printf("Total Page Faults: %d\n", pageFaults);
     return 0;
 }
+
+/*
+Enter the reference string (end with 0): 3 0 3 5 6 3 2 3 0 1 2 4 3 0 3 0 0 
+Total Page Faults: 1
+*/
