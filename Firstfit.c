@@ -54,9 +54,21 @@ int main() {
     return 0;
 }
 /* 
-Process No.   Process Size   Block No.
-1            212           3
-2            417           2
-3            112           1
-4            426           5
+Sample Input:
+yaml
+Copy
+Enter the number of memory blocks: 4
+Enter the sizes of 4 memory blocks: 10 20 30 40
+Enter the number of processes: 5
+Enter the sizes of 5 processes: 12 18 15 25 30
+Sample Output:
+mathematica
+Copy
+First Fit Allocation:
+Process No.    Process Size    Block No.
+1              12              1
+2              18              2
+3              15              3
+4              25              4
+5              30              Not Allocated
 */
