@@ -1,0 +1,303 @@
+pipe(ipc)
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+int main() {
+    int fd[2]; // fd[0] for reading, fd[1] for writing
+    pid_t pid;
+    char write_msg[] = "Hello from parent!";
+    char read_msg[100];
+
+    // Create a pipe
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        return 1;
+    }
+
+    pid = fork(); // Create a child process
+
+    if (pid < 0) {
+        perror("fork");
+        return 1;
+    }
+
+    if (pid > 0) {  // Parent process
+        close(fd[0]); // Close unused read end
+        write(fd[1], write_msg, strlen(write_msg) + 1);
+        close(fd[1]); // Close write end after writing
+    } else {        // Child process
+        close(fd[1]); // Close unused write end
+        read(fd[0], read_msg, sizeof(read_msg));
+        printf("Child received: %s\n", read_msg);
+        close(fd[0]); // Close read end
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+banker
+#include <stdio.h>
+#include <stdbool.h>
+
+#define P 5  // Number of processes
+#define R 3  // Number of resources
+
+int main() {
+    int alloc[P][R] = { {0, 1, 0}, {2, 0, 0}, {3, 0, 2}, {2, 1, 1}, {0, 0, 2} };
+    int max[P][R]   = { {7, 5, 3}, {3, 2, 2}, {9, 0, 2}, {2, 2, 2}, {4, 3, 3} };
+    int avail[R]    = {3, 3, 2};
+
+    int need[P][R];
+    for (int i = 0; i < P; i++)
+        for (int j = 0; j < R; j++)
+            need[i][j] = max[i][j] - alloc[i][j];
+
+    bool finish[P] = {false};
+    int safeSeq[P];
+    int work[R];
+    for (int i = 0; i < R; i++)
+        work[i] = avail[i];
+
+    int count = 0;
+    while (count < P) {
+        bool found = false;
+        for (int p = 0; p < P; p++) {
+            if (!finish[p]) {
+                bool canAllocate = true;
+                for (int j = 0; j < R; j++) {
+                    if (need[p][j] > work[j]) {
+                        canAllocate = false;
+                        break;
+                    }
+                }
+
+                if (canAllocate) {
+                    for (int k = 0; k < R; k++)
+                        work[k] += alloc[p][k];
+                    safeSeq[count++] = p;
+                    finish[p] = true;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            printf("System is not in a safe state.\n");
+            return -1;
+        }
+    }
+
+    printf("System is in a safe state.\nSafe sequence is: ");
+    for (int i = 0; i < P; i++)
+        printf("P%d ", safeSeq[i]);
+    printf("\n");
+
+    return 0;
+}
+
+
+
+deadlock detection
+#include <stdio.h>
+#include <stdbool.h>
+
+#define P 5  // Number of processes
+#define R 3  // Number of resources
+
+int main() {
+    int alloc[P][R] = {
+        {0, 1, 0},
+        {2, 0, 0},
+        {3, 0, 3},
+        {2, 1, 1},
+        {0, 0, 2}
+    };
+
+    int request[P][R] = {
+        {0, 0, 0},
+        {2, 0, 2},
+        {0, 0, 0},
+        {1, 0, 0},
+        {0, 0, 2}
+    };
+
+    int avail[R] = {1, 1, 0};  // Available instances of resources
+
+    bool finish[P] = {false};
+    int work[R];
+    for (int i = 0; i < R; i++)
+        work[i] = avail[i];
+
+    int count = 0;
+
+    while (count < P) {
+        bool found = false;
+        for (int i = 0; i < P; i++) {
+            if (!finish[i]) {
+                bool canFinish = true;
+                for (int j = 0; j < R; j++) {
+                    if (request[i][j] > work[j]) {
+                        canFinish = false;
+                        break;
+                    }
+                }
+
+                if (canFinish) {
+                    for (int k = 0; k < R; k++)
+                        work[k] += alloc[i][k];
+                    finish[i] = true;
+                    found = true;
+                    count++;
+                }
+            }
+        }
+
+        if (!found) break; // No progress, break the loop
+    }
+
+    bool deadlock = false;
+    for (int i = 0; i < P; i++) {
+        if (!finish[i]) {
+            deadlock = true;
+            printf("Process P%d is in deadlock.\n", i);
+        }
+    }
+
+    if (!deadlock)
+        printf("No deadlock detected. System is in a safe state.\n");
+
+    return 0;
+}
+
+
+
+
+
+
+semaphore-mutual exclusion
+#include<stdio.h>
+
+#include<stdlib.h>
+
+int mutex=1, full=0,empty=3,x=0;
+
+int main()
+
+{
+
+int n;
+
+void producer();
+
+void consumer();
+
+int wait(int);
+
+int signal(int);
+
+printf("\n1.Producer\n2.Consumer\n3.Exit");
+
+while(1)
+
+{
+
+printf("\nEnter your choice:");
+
+scanf("%d",&n);
+
+switch(n)
+
+{
+
+case 1: if((mutex=1)&&(empty!=0))
+
+producer();
+
+else
+
+printf("Buffer is full!");
+
+break;
+
+case 2: if((mutex=1)&&(full!=0))
+
+consumer();
+else
+
+printf("Buffer is empty!!");
+
+break;
+
+case 3:
+
+exit(0);
+
+break;
+
+}
+
+}
+
+return 0;
+
+}
+
+int wait(int s)
+
+{
+
+return (--s);
+
+}
+
+int signal(int s)
+
+{
+
+return(++s);
+
+}
+
+void producer()
+
+{
+
+mutex=wait(mutex);
+
+full-signal(full);
+
+empty-wait(empty);
+
+x++;
+
+printf("\nProducer produces the item %d",x);
+
+mutex-signal(mutex);
+
+}
+
+void consumer()
+
+{
+
+mutex-wait(mutex);
+
+full-wait(full);
+
+empty-signal(empty);
+
+printf("\nConsumer consumes item %d",x);
+
+x--;
+
+mutex=signal(mutex);
+
+}
